@@ -1,0 +1,33 @@
+[tool.poetry]
+name = "fast_puc"
+version = "0.2.0"
+description = "FaSt_PUC converts numbers to strings with appropriate unit prefix."
+authors = ["Fabian Stutzki <fast@fast-apps.de>"]
+readme = "README.md"
+homepage = "https://www.fast-apps.de"
+license = "MIT"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+keywords = [
+    "unit"
+]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+numpy = "^1.2"
+pytest = "^8"
+
+[tool.poetry.dev-dependencies]
+pytest = "^8"
+ruff = "^0.3"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+lint.fixable = ["ALL"]
+line-length = 100
