@@ -2,22 +2,8 @@
 
 from __future__ import annotations
 import numpy as np
-from enum import Enum
 
-class SIPrefix(Enum):
-    ATTO = (-18, "a")
-    FEMTO = (-15, "f")
-    PICO = (-12, "p")
-    NANO = (-9, "n")
-    MICRO = (-6, "µ")
-    MILLI = (-3, "m")
-    NONE = (0, "")
-    KILO = (3, "k")
-    MEGA = (6, "M")
-    GIGA = (9, "G")
-    TERA = (12, "T")
-    PETA = (15, "P")
-
+# Constants for special units and characters
 MICRO_SYMBOL = "µ"
 DB_UNIT = "dB"
 PERCENT_UNIT = "%"
@@ -27,6 +13,23 @@ FILE_REPLACEMENTS = {
     "/": "p",
     " ": "_"
 }
+
+# SI prefix definitions: (exponent threshold, multiplier, prefix symbol)
+SI_PREFIXES = [
+    (-19, 0, ""),    # below this, no prefix
+    (-16, -18, "a"), # atto
+    (-13, -15, "f"), # femto
+    (-10, -12, "p"), # pico
+    (-7, -9, "n"),   # nano
+    (-4, -6, "µ"),   # micro
+    (-1, -3, "m"),   # milli
+    (2, 0, ""),      # no prefix
+    (5, 3, "k"),     # kilo
+    (8, 6, "M"),     # mega
+    (11, 9, "G"),    # giga
+    (14, 12, "T"),   # tera
+    (17, 15, "P"),   # peta
+]
 
 def puc(
     value: float | np.ndarray = 0,
@@ -156,30 +159,7 @@ def get_prefix(exponent: float) -> tuple[int, str]:
     Returns:
         Tuple of (multiplier, prefix_symbol)
     """
-    if exponent <= -19:
-        return SIPrefix.NONE.value
-    elif exponent <= -16:
-        return SIPrefix.ATTO.value
-    elif exponent <= -13:
-        return SIPrefix.FEMTO.value
-    elif exponent <= -10:
-        return SIPrefix.PICO.value
-    elif exponent <= -7:
-        return SIPrefix.NANO.value
-    elif exponent <= -4:
-        return SIPrefix.MICRO.value
-    elif exponent <= -1:
-        return SIPrefix.MILLI.value
-    elif exponent <= 2:
-        return SIPrefix.NONE.value
-    elif exponent <= 5:
-        return SIPrefix.KILO.value
-    elif exponent <= 8:
-        return SIPrefix.MEGA.value
-    elif exponent <= 11:
-        return SIPrefix.GIGA.value
-    elif exponent <= 14:
-        return SIPrefix.TERA.value
-    elif exponent <= 17:
-        return SIPrefix.PETA.value
-    return SIPrefix.NONE.value
+    for threshold, mult, prefix in SI_PREFIXES:
+        if exponent <= threshold:
+            return mult, prefix
+    return 0, ""  # default case for very large numbers
