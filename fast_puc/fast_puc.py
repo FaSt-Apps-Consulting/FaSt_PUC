@@ -1,39 +1,70 @@
-"""unit converts floats to strings with correct SI prefixes."""
+"""puc converts floats to strings with correct SI prefixes."""
 
+from __future__ import annotations
 import numpy as np
+from enum import Enum
 
+class SIPrefix(Enum):
+    ATTO = (-18, "a")
+    FEMTO = (-15, "f")
+    PICO = (-12, "p")
+    NANO = (-9, "n")
+    MICRO = (-6, "µ")
+    MILLI = (-3, "m")
+    NONE = (0, "")
+    KILO = (3, "k")
+    MEGA = (6, "M")
+    GIGA = (9, "G")
+    TERA = (12, "T")
+    PETA = (15, "P")
 
-def puc(value=0, unit="", precision=3, verbose=False, filecompatible=False):
-    """Formatting of values for scientific use of SI units
+MICRO_SYMBOL = "µ"
+DB_UNIT = "dB"
+PERCENT_UNIT = "%"
+FILE_REPLACEMENTS = {
+    MICRO_SYMBOL: "u",
+    ".": "p",
+    "/": "p",
+    " ": "_"
+}
 
-    from fast_puc import puc
-    puc(0.1,"m")  # "100mm"
-    puc(200e-9,"s")  # "200ns"
-    puc(1.000213, "m", precision=5)  # "1000.2mm"
-    puc(1.0001, " m")  # "1 m" with space
-    puc(1.0001, "_m")  # "1_m" with underscore
-    puc(0.911, "%")  # "91.1%" converted to percent
-    puc(1001, "dB")  # "30dB" converted to dB
-    puc(1030e-9, "!m")  # "1p03um" file name compatible without .
+def puc(
+    value: float | np.ndarray = 0,
+    unit: str = "",
+    precision: int | float | np.ndarray = 3,
+    verbose: bool = False,
+    filecompatible: bool = False,
+) -> str | tuple[str, int, str]:
+    """Format values with SI unit prefixes.
+    
+    Args:
+        value: Numeric value to format
+        unit: Unit string with optional modifiers (" ", "_", "!", "dB", "%")
+        precision: Number of significant digits
+        verbose: If True, return additional formatting information
+        filecompatible: If True, return filename-safe string
+        
+    Returns:
+        Formatted string if verbose=False, otherwise (string, multiplier, prefix)
+        
+    Raises:
+        ValueError: If value cannot be converted to float
+    """
+    # Validate inputs
+    if not isinstance(unit, str):
+        raise TypeError("unit must be a string")
+    if not isinstance(verbose, bool):
+        raise TypeError("verbose must be a boolean")
+    if not isinstance(filecompatible, bool):
+        raise TypeError("filecompatible must be a boolean")
 
-    The following wildcards can be used in the argument unit:
-    - "dB" converts to decibels
-    - "%" converts to percent
-    - " " between number and unit
-    - "_" between number and unit
-    - "!" generates a filename compatible string "2p43nm"
-
-    verbose=True returns additional information for scaling of vectors."""
-
-    # preprocess input
+    # Convert value to float, with better error message
     try:
         val = np.squeeze(value).astype(float)
-    except ValueError as excpt:
-        print("Cannot convert input to float")
-        print(excpt)
-        return str(value)
+    except (ValueError, TypeError) as e:
+        raise ValueError(f"Cannot convert value '{value}' to float: {str(e)}")
 
-    # process hidden options
+    # preprocess input
     separator = ""
     if " " in unit:
         separator = " "
@@ -72,13 +103,13 @@ def puc(value=0, unit="", precision=3, verbose=False, filecompatible=False):
 
     formatter = "g"
 
-    if unit == "dB":
+    if unit == DB_UNIT:
         string = (
             ("{0:." + str(int(precision)) + formatter + "}").format(10 * np.log10(val))
             + separator
             + unit
         )
-    elif unit == "%":
+    elif unit == PERCENT_UNIT:
         string = (
             ("{0:." + str(int(precision)) + formatter + "}").format(sign * 100 * val)
             + separator
@@ -105,10 +136,8 @@ def puc(value=0, unit="", precision=3, verbose=False, filecompatible=False):
 
     # Convert string to be filename compatible
     if filecompatible:
-        string = string.replace("µ", "u")
-        string = string.replace(".", "p")
-        string = string.replace("/", "p")
-        string = string.replace(" ", "_")
+        for old, new in FILE_REPLACEMENTS.items():
+            string = string.replace(old, new)
 
     if verbose:
         # Return string, multiplier and prefix
@@ -118,44 +147,39 @@ def puc(value=0, unit="", precision=3, verbose=False, filecompatible=False):
         return string
 
 
-def get_prefix(exponent):
+def get_prefix(exponent: float) -> tuple[int, str]:
+    """Get the SI prefix for a given exponent.
+    
+    Args:
+        exponent: The exponent of the number in base 10
+        
+    Returns:
+        Tuple of (multiplier, prefix_symbol)
+    """
     if exponent <= -19:
-        prefix = ""
-        mult = 0
+        return SIPrefix.NONE.value
     elif exponent <= -16:
-        prefix = "a"
-        mult = -18
+        return SIPrefix.ATTO.value
     elif exponent <= -13:
-        prefix = "f"
-        mult = -15
+        return SIPrefix.FEMTO.value
     elif exponent <= -10:
-        prefix = "p"
-        mult = -12
+        return SIPrefix.PICO.value
     elif exponent <= -7:
-        prefix = "n"
-        mult = -9
+        return SIPrefix.NANO.value
     elif exponent <= -4:
-        prefix = "µ"
-        mult = -6
+        return SIPrefix.MICRO.value
     elif exponent <= -1:
-        prefix = "m"
-        mult = -3
+        return SIPrefix.MILLI.value
     elif exponent <= 2:
-        prefix = ""
-        mult = 0
+        return SIPrefix.NONE.value
     elif exponent <= 5:
-        prefix = "k"
-        mult = 3
+        return SIPrefix.KILO.value
     elif exponent <= 8:
-        prefix = "M"
-        mult = 6
+        return SIPrefix.MEGA.value
     elif exponent <= 11:
-        prefix = "G"
-        mult = 9
+        return SIPrefix.GIGA.value
     elif exponent <= 14:
-        prefix = "T"
-        mult = 12
+        return SIPrefix.TERA.value
     elif exponent <= 17:
-        prefix = "P"
-        mult = 15
-    return mult, prefix
+        return SIPrefix.PETA.value
+    return SIPrefix.NONE.value
