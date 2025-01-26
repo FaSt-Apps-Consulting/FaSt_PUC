@@ -31,6 +31,82 @@ SI_PREFIXES = [
     (17, 15, "P"),   # peta
 ]
 
+def format_db_value(val: float, precision: int, separator: str, unit: str) -> str:
+    """Format value in decibels.
+    
+    Args:
+        val: Value to format
+        precision: Number of significant digits
+        separator: Separator between value and unit
+        unit: Unit string
+        
+    Returns:
+        Formatted string with dB unit
+    """
+    return f"{{0:.{precision}g}}".format(10 * np.log10(val)) + separator + unit
+
+def format_percent_value(val: float, precision: int, separator: str, unit: str) -> str:
+    """Format value as percentage.
+    
+    Args:
+        val: Value to format
+        precision: Number of significant digits
+        separator: Separator between value and unit
+        unit: Unit string
+        
+    Returns:
+        Formatted string with percent unit
+    """
+    return f"{{0:.{precision}g}}".format(100 * val) + separator + unit
+
+def format_si_value(val: float, precision: int | float | np.ndarray, 
+                   separator: str, unit: str) -> tuple[str, int, str]:
+    """Format value with SI prefix.
+    
+    Args:
+        val: Value to format (can be positive or negative)
+        precision: Number of significant digits or array for dynamic precision
+        separator: Separator between value and unit
+        unit: Unit string
+        
+    Returns:
+        Tuple of (formatted string with SI prefix, multiplier, prefix)
+    """
+    # save sign status
+    sign = 1
+    if val < 0:
+        sign = -1
+    val *= sign
+
+    # Determine precision if given as array
+    if type(precision) not in [float, int]:
+        with np.errstate(divide="ignore", invalid="ignore"):
+            exponent = np.floor(np.log10(np.min(np.abs(np.diff(precision)))))
+        precision = np.abs(exponent - np.floor(np.log10(val))) + 1
+    else:
+        exponent = np.floor(np.log10(val))
+
+    # round value to appropriate length
+    if np.isfinite(exponent):
+        val = np.round(val * 10 ** (-exponent - 1 + precision)) * 10 ** -(-exponent - 1 + precision)
+    exponent = np.floor(np.log10(val))
+
+    # Fix special case
+    if precision in [4, 5]:
+        # 1032.1 nm instead of 1.0321 µm
+        exponent -= 3
+        
+    mult, prefix = get_prefix(exponent)
+
+    # First attempt at formatting
+    string = f"{{0:.{int(precision)}g}}".format(sign * val * 10 ** (-mult)) + separator + prefix + unit
+    
+    # If we got scientific notation, try with one more digit of precision
+    if "e+" in string:
+        string = f"{{0:.{int(precision + 1)}g}}".format(sign * val * 10 ** (-mult)) + separator + prefix + unit
+    
+    return string, mult, prefix
+
 def puc(
     value: float | np.ndarray = 0,
     unit: str = "",
@@ -80,62 +156,14 @@ def puc(
         filecompatible = True
         unit = unit.replace("!", "")
 
-    # save sign status
-    sign = 1
-    if val < 0:
-        sign = -1
-    val *= sign
-
-    # Determine precision if given as array
-    if type(precision) not in [float, int]:
-        with np.errstate(divide="ignore", invalid="ignore"):
-            exponent = np.floor(np.log10(np.min(np.abs(np.diff(precision)))))
-        precision = np.abs(exponent - np.floor(np.log10(val))) + 1
-    else:
-        exponent = np.floor(np.log10(val))
-
-    # round value to appropriate length
-    if np.isfinite(exponent):
-        val = np.round(val * 10 ** (-exponent - 1 + precision)) * 10 ** -(-exponent - 1 + precision)
-    exponent = np.floor(np.log10(val))
-
-    # Fix special case
-    if precision in [4, 5]:
-        # 1032.1 nm instead of 1.0321 µm
-        exponent -= 3
-
-    formatter = "g"
-
     if unit == DB_UNIT:
-        string = (
-            ("{0:." + str(int(precision)) + formatter + "}").format(10 * np.log10(val))
-            + separator
-            + unit
-        )
+        string = format_db_value(val, int(precision), separator, unit)
+        mult, prefix = 0, ""
     elif unit == PERCENT_UNIT:
-        string = (
-            ("{0:." + str(int(precision)) + formatter + "}").format(sign * 100 * val)
-            + separator
-            + unit
-        )
+        string = format_percent_value(val, int(precision), separator, unit)
+        mult, prefix = 0, ""
     else:
-        mult, prefix = get_prefix(exponent)
-
-        string = (
-            ("{0:." + str(int(precision)) + formatter + "}").format(sign * val * 10 ** (-mult))
-            + separator
-            + prefix
-            + unit
-        )
-        if "e+" in string:
-            string = (
-                ("{0:." + str(int(precision + 1)) + formatter + "}").format(
-                    sign * val * 10 ** (-mult)
-                )
-                + separator
-                + prefix
-                + unit
-            )
+        string, mult, prefix = format_si_value(val, precision, separator, unit)
 
     # Convert string to be filename compatible
     if filecompatible:
@@ -143,10 +171,8 @@ def puc(
             string = string.replace(old, new)
 
     if verbose:
-        # Return string, multiplier and prefix
         return string, mult, prefix
     else:
-        # Return just the formatted string
         return string
 
 
