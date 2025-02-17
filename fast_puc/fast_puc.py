@@ -84,12 +84,14 @@ def format_si_value(val: float, precision: int | float | np.ndarray,
             exponent = np.floor(np.log10(np.min(np.abs(np.diff(precision)))))
         precision = np.abs(exponent - np.floor(np.log10(val))) + 1
     else:
-        exponent = np.floor(np.log10(val))
+        with np.errstate(divide="ignore", invalid="ignore"):
+            exponent = np.floor(np.log10(val))
 
     # round value to appropriate length
     if np.isfinite(exponent):
         val = np.round(val * 10 ** (-exponent - 1 + precision)) * 10 ** -(-exponent - 1 + precision)
-    exponent = np.floor(np.log10(val))
+    with np.errstate(divide="ignore", invalid="ignore"):
+        exponent = np.floor(np.log10(val))
 
     # Fix special case
     if precision in [4, 5]:
