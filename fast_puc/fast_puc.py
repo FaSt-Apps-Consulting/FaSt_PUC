@@ -1,6 +1,7 @@
 """puc converts floats to strings with correct SI prefixes."""
 
 from __future__ import annotations
+
 import numpy as np
 
 # Constants for special units and characters
@@ -58,7 +59,7 @@ def format_percent_value(val: float, precision: int, separator: str, unit: str) 
 
 
 def format_si_value(
-    val: float, precision: int | float | np.ndarray, separator: str, unit: str
+    val: float, precision: float | np.ndarray, separator: str, unit: str
 ) -> tuple[str, int, str]:
     """Format value with SI prefix.
 
@@ -126,7 +127,7 @@ def format_si_value(
 def puc(
     value: float | np.ndarray = 0,
     unit: str = "",
-    precision: int | float | np.ndarray = 3,
+    precision: float | np.ndarray = 3,
     verbose: bool = False,
     filecompatible: bool = False,
 ) -> str | tuple[str, int, str]:
@@ -156,16 +157,16 @@ def puc(
     # Convert value to float, with better error message
     try:
         val = np.squeeze(value).astype(float)
-        if not val.shape == ():
+        if val.shape != ():
             # If multiple values provided, use the first one as this is a single-string formatter
             val = val.flat[0]
     except (ValueError, TypeError) as e:
-        raise ValueError(f"Cannot convert value '{value}' to float: {str(e)}")
+        raise ValueError(f"Cannot convert value '{value}' to float: {e!s}")
 
     # Ensure precision is scalar for dB and % formatting
     if not np.isscalar(precision):
         # Fallback to default if we can't easily determine a scalar precision
-        p_val = int(3)
+        p_val = 3
     else:
         p_val = int(precision)
 

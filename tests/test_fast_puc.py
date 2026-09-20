@@ -1,10 +1,8 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 # %%
-from fast_puc import puc, SI_PREFIXES
-import pytest
 import numpy as np
+import pytest
+
+from fast_puc import SI_PREFIXES, puc
 
 
 # %%
@@ -60,7 +58,6 @@ def test_cornercases():
     assert puc(999.999, "W") == "1kW"
     assert puc(9.999e-4, "W") == "1mW"
     assert puc(999.999999, "m", precision=2) == "1km"
-    return
 
 
 @pytest.mark.parametrize(

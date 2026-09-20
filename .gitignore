@@ -7,3 +7,4 @@ dist/
 poetry.lock
 uv.lock
 .venv/
+.omo/
