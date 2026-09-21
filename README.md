@@ -33,6 +33,10 @@ puc(1.0001, "m")    # "1m"
 puc(0.991e-6, "s")  # "991ns"
 puc(1030e-9, "m")   # "1.03µm"
 puc(999.999, "W")   # "1kW"
+
+# Vectorized input returns a list of formatted values
+puc([900e-6, 1000e-6, 1100e-6], "m")  # ["900µm", "1mm", "1.1mm"]
+puc(np.array([1e-3, 2e-3]), "W")       # ["1mW", "2mW"]
 ```
 
 ## Advanced Features
