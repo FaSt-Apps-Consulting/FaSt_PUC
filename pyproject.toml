@@ -1,6 +1,6 @@
 [project]
 name = "fast_puc"
-version = "0.2.1"
+version = "0.3.0"
 description = "FaSt_PUC converts numbers to strings with appropriate unit prefix."
 authors = [
     {name = "Fabian Stutzki", email = "fast@fast-apps.de"}
